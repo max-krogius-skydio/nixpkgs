@@ -204,7 +204,18 @@ fi
 
 PATH="$path_backup"
 # Old bash workaround, see above.
-exec @prog@ \
-    ${extraBefore+"${extraBefore[@]}"} \
-    ${params+"${params[@]}"} \
-    ${extraAfter+"${extraAfter[@]}"}
+
+if (( "${NIX_RESPONSE_FILE_EXPANDED:-0}" >= 1 )); then
+    responseFile=$(mktemp --tmpdir ld-params.XXXXXX)
+    trap 'rm -f -- "$responseFile"' EXIT
+    printf "%q\n" \
+       ${extraBefore+"${extraBefore[@]}"} \
+       ${params+"${params[@]}"} \
+       ${extraAfter+"${extraAfter[@]}"} > "$responseFile"
+    @prog@ "@$responseFile"
+else
+    @prog@ \
+        ${extraBefore+"${extraBefore[@]}"} \
+        ${params+"${params[@]}"} \
+        ${extraAfter+"${extraAfter[@]}"}
+fi
